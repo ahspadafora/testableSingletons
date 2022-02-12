@@ -8,26 +8,44 @@
 import XCTest
 @testable import testableSingletons
 
+class MockAPIClient: TestableApiClient {
+    var getDataCallBackTriggered = false
+    static let instance = MockAPIClient()
+    
+    override func getData(callback: @escaping(Bool)->()){
+        getDataCallBackTriggered = true
+        print("getDataCallBackTrigger set to \(getDataCallBackTriggered)")
+        callback(true)
+    }
+}
+
 class testableSingletonsTests: XCTestCase {
 
+    var viewController: TestableViewController?
+    var mockApiClient: MockAPIClient?
+    
+    func makeSUT() -> TestableViewController {
+        let storyboard = UIStoryboard(name: "Main", bundle: nil)
+        let sut = storyboard.instantiateViewController(identifier: "TestableViewController") as! TestableViewController
+        sut.loadViewIfNeeded()
+        sut.client = self.mockApiClient!
+        return sut
+    }
+    
     override func setUpWithError() throws {
-        // Put setup code here. This method is called before the invocation of each test method in the class.
+        mockApiClient = MockAPIClient.instance
+        viewController = makeSUT()
     }
 
     override func tearDownWithError() throws {
-        // Put teardown code here. This method is called after the invocation of each test method in the class.
+        mockApiClient = nil
+        viewController = nil
     }
 
-    func testExample() throws {
-        // This is an example of a functional test case.
-        // Use XCTAssert and related functions to verify your tests produce the correct results.
-    }
-
-    func testPerformanceExample() throws {
-        // This is an example of a performance test case.
-        self.measure {
-            // Put the code you want to measure the time of here.
-        }
+    func testViewController_whenCallsLoadData_callsBackABool() throws {
+        viewController?.loadData(callback: { (success) in
+            XCTAssert(self.mockApiClient?.getDataCallBackTriggered == true, "Mock API Client should have triggered getData when SUT (LoginViewController) called loadData")
+        })
     }
 
 }
